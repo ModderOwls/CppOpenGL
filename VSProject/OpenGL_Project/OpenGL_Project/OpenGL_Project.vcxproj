@@ -149,6 +149,10 @@
   <ItemGroup>
     <None Include="Shaders\SimpleFragment.shader" />
     <None Include="Shaders\SimpleVertex.shader" />
+    <None Include="shaders\SkyFragment.shader" />
+    <None Include="shaders\SkyVertex.shader" />
+    <None Include="shaders\TerrainFragment.shader" />
+    <None Include="shaders\TerrainVertex.shader" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="sprites\container.jpg" />

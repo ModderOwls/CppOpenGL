@@ -35,6 +35,18 @@
     <None Include="Shaders\SimpleFragment.shader">
       <Filter>Resource Files\shaders</Filter>
     </None>
+    <None Include="shaders\SkyFragment.shader">
+      <Filter>Resource Files\shaders</Filter>
+    </None>
+    <None Include="shaders\SkyVertex.shader">
+      <Filter>Resource Files\shaders</Filter>
+    </None>
+    <None Include="shaders\TerrainFragment.shader">
+      <Filter>Resource Files\shaders</Filter>
+    </None>
+    <None Include="shaders\TerrainVertex.shader">
+      <Filter>Resource Files\shaders</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <Image Include="sprites\container.jpg">
