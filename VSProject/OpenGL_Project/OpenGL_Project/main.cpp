@@ -4,13 +4,16 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 
-#define STB_IMAGE_IMPLEMENTATION
-#include "stb_image.h"
-
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
-#include <glm/gtc/quaternion.hpp>
+#define GLM_ENABLE_EXPERIMENTAL
+#include <glm/gtx/quaternion.hpp>
+
+#include "model.h"
+
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb_image.h"
 
 
 void processInput(GLFWwindow* window);
@@ -25,6 +28,8 @@ GLuint loadTexture(const char* path, int comp = 0);
 
 void renderSkyBox();
 void renderTerrain();
+void renderModel(Model* model, glm::vec3 pos, glm::vec3 rot, glm::vec3 scale);
+
 unsigned int GeneratePlane(const char* heightmap, unsigned char* &data, GLenum format, int comp, float hScale, float xzScale, unsigned int& indicesSize, unsigned int& heightmapID);
 
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
@@ -32,7 +37,7 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 
 bool keys[1024];
 
-GLuint simpleProgram, skyProgram, terrainProgram;
+GLuint simpleProgram, skyProgram, terrainProgram, modelProgram;
 
 //Screen data.
 const int screenWidth = 1280, screenHeight = 720;
@@ -59,12 +64,17 @@ GLuint dirt, sand, grass, rock, snow;
 
 float timePassed;
 
+Model* backpack;
+
 
 int main()
 {
     GLFWwindow* window;
     int resultInit = init(window);
     if (resultInit != 0) return resultInit;
+
+    //Flip UVs vertically for correct model importing.
+    stbi_set_flip_vertically_on_load(true);
 
     createGeometry(VAO, EBO, boxSize, boxIndicesSize);
     createShaders();
@@ -82,6 +92,8 @@ int main()
     rock = loadTexture("sprites/rock.jpg");
     snow = loadTexture("sprites/snow.jpg");
 
+    backpack = new Model("models/backpack/backpack.obj");
+
     //Useful for debugging.
     //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
@@ -97,6 +109,8 @@ int main()
     //Render loop.
     while (!glfwWindowShouldClose(window))
     {
+        timePassed = glfwGetTime();
+
         //Input
         processInput(window);
 
@@ -106,6 +120,7 @@ int main()
 
         renderSkyBox();
         renderTerrain();
+        renderModel(backpack, glm::vec3(500, 100, 500), glm::vec3(0, timePassed * 2, 0), glm::vec3(50, 50, 50)); 
 
         //Polling
         glfwSwapBuffers(window);
@@ -160,7 +175,6 @@ void renderTerrain()
     glUniformMatrix4fv(glGetUniformLocation(terrainProgram, "view"), 1, GL_FALSE, glm::value_ptr(view));
     glUniformMatrix4fv(glGetUniformLocation(terrainProgram, "projection"), 1, GL_FALSE, glm::value_ptr(projection));
 
-    timePassed = glfwGetTime();
     lightDirection = glm::normalize(glm::vec3(glm::sin(timePassed), -0.5f, glm::cos(timePassed)));
     glUniform3fv(glGetUniformLocation(terrainProgram, "lightDirection"), 1, glm::value_ptr(lightDirection));
     glUniform3fv(glGetUniformLocation(terrainProgram, "cameraPosition"), 1, glm::value_ptr(cameraPosition));
@@ -183,6 +197,44 @@ void renderTerrain()
     //Rendering.
     glBindVertexArray(terrainVAO);
     glDrawElements(GL_TRIANGLES, terrainIndicesSize, GL_UNSIGNED_INT, 0);
+}
+
+void renderModel(Model* model, glm::vec3 pos, glm::vec3 rot, glm::vec3 scale)
+{
+    glEnable(GL_BLEND);
+    //Alpha blend.
+    //glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    //Additive blend.
+    //glBlendFunc(GL_ONE, GL_ONE);
+    //Soft additive blend.
+    //glBlendFunc(GL_ONE_MINUS_DST_COLOR, GL_ONE);
+    //Multiply blend.
+    //glBlendFunc(GL_DST_COLOR, GL_ZERO);
+    //Double multiply blend.
+    glBlendFunc(GL_DST_COLOR, GL_SRC_COLOR);
+
+    glEnable(GL_DEPTH);
+    glEnable(GL_DEPTH_TEST);
+    glEnable(GL_CULL_FACE);
+    glCullFace(GL_BACK);
+
+    glUseProgram(modelProgram);
+
+    glm::mat4 world = glm::mat4(1.0f);
+    world = glm::translate(world, pos);
+    world = world * glm::toMat4(glm::quat(rot));
+    world = glm::scale(world, scale);
+
+    glUniformMatrix4fv(glGetUniformLocation(modelProgram, "world"), 1, GL_FALSE, glm::value_ptr(world));
+    glUniformMatrix4fv(glGetUniformLocation(modelProgram, "view"), 1, GL_FALSE, glm::value_ptr(view));
+    glUniformMatrix4fv(glGetUniformLocation(modelProgram, "projection"), 1, GL_FALSE, glm::value_ptr(projection));
+
+    glUniform3fv(glGetUniformLocation(modelProgram, "lightDirection"), 1, glm::value_ptr(lightDirection));
+    glUniform3fv(glGetUniformLocation(modelProgram, "cameraPosition"), 1, glm::value_ptr(cameraPosition));
+
+    model->Draw(modelProgram);
+
+    glDisable(GL_BLEND);
 }
 
 unsigned int GeneratePlane(const char* heightmap, unsigned char* &data, GLenum format, int comp, float hScale, float xzScale, unsigned int& indicesSize, unsigned int& heightmapID) 
@@ -543,6 +595,16 @@ void createShaders()
     glUniform1i(glGetUniformLocation(terrainProgram, "grass"), 4);
     glUniform1i(glGetUniformLocation(terrainProgram, "rock"), 5);
     glUniform1i(glGetUniformLocation(terrainProgram, "snow"), 6);
+
+    createProgram(modelProgram, "shaders/model.vs", "shaders/model.fs");
+
+    glUseProgram(modelProgram);
+
+    glUniform1i(glGetUniformLocation(modelProgram, "texture_diffuse1"), 0);
+    glUniform1i(glGetUniformLocation(modelProgram, "texture_specular1"), 1);
+    glUniform1i(glGetUniformLocation(modelProgram, "texture_normal1"), 2);
+    glUniform1i(glGetUniformLocation(modelProgram, "texture_roughness1"), 3);
+    glUniform1i(glGetUniformLocation(modelProgram, "texture_ao1"), 4);
 }
 
 void createProgram(GLuint& programID, const char* vertex, const char* fragment)
