@@ -28,6 +28,7 @@ GLuint loadTexture(const char* path, int comp = 0);
 
 void renderSkyBox();
 void renderTerrain();
+void renderWater();
 void renderModel(Model* model, glm::vec3 pos, glm::vec3 rot, glm::vec3 scale);
 
 unsigned int GeneratePlane(const char* heightmap, unsigned char* &data, GLenum format, int comp, float hScale, float xzScale, unsigned int& indicesSize, unsigned int& heightmapID);
@@ -37,7 +38,7 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 
 bool keys[1024];
 
-GLuint simpleProgram, skyProgram, terrainProgram, modelProgram;
+GLuint simpleProgram, skyProgram, terrainProgram, waterProgram, modelProgram;
 
 //Screen data.
 const int screenWidth = 1280, screenHeight = 720;
@@ -62,9 +63,15 @@ unsigned char* heightmapTexture;
 
 GLuint dirt, sand, grass, rock, snow;
 
+GLuint waterVAO, waterIndicesSize, waterHeightmapID, waterNormal, waterFoam;
+unsigned char* waterHeightmapTexture;
+
 float timePassed;
 
 Model* backpack;
+Model* teapot;
+Model* cabinet;
+Model* tree;
 
 
 int main()
@@ -79,8 +86,11 @@ int main()
     createGeometry(VAO, EBO, boxSize, boxIndicesSize);
     createShaders();
 
-    terrainVAO = GeneratePlane("sprites/heightmap.png", heightmapTexture, GL_RGBA, 4, 100.0f, 5.0f, terrainIndicesSize, heightmapID);
+    terrainVAO = GeneratePlane("sprites/heightmap.png", heightmapTexture, GL_RGBA, 4, 80.0f, 2.0f, terrainIndicesSize, heightmapID);
     heightNormalID = loadTexture("sprites/heightmapNormal.png");
+    waterVAO = GeneratePlane("sprites/waterPlane.png", waterHeightmapTexture, GL_RGBA, 4, 10.0f, 20.11f, waterIndicesSize, waterHeightmapID);
+    waterNormal = loadTexture("sprites/water.png", 4);
+    waterFoam = loadTexture("sprites/terrainFoam.jpg");
 
     //Load and apply textures.
     GLuint texture1 = loadTexture("sprites/container.jpg");
@@ -93,6 +103,9 @@ int main()
     snow = loadTexture("sprites/snow.jpg");
 
     backpack = new Model("models/backpack/backpack.obj");
+    teapot = new Model("models/utahteapot/teapot.obj");
+    cabinet = new Model("models/cabinet/cabinet.obj");
+    tree = new Model("models/tree/tree.obj");
 
     //Useful for debugging.
     //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
@@ -120,7 +133,12 @@ int main()
 
         renderSkyBox();
         renderTerrain();
-        renderModel(backpack, glm::vec3(500, 100, 500), glm::vec3(0, timePassed * 2, 0), glm::vec3(50, 50, 50)); 
+        renderWater();
+        renderModel(teapot, glm::vec3(500, 100 + glm::sin(timePassed * 2) * 10, 500), glm::vec3(0, timePassed * 2.5f, 0), glm::vec3(0.5f, 0.5f, 0.5f));
+        renderModel(cabinet, glm::vec3(500, 40, 720), glm::vec3(glm::radians(-4.0f), glm::radians(190.0f), glm::radians(-1.0f)), glm::vec3(80, 80, 80));
+        renderModel(tree, glm::vec3(300, 40, 350), glm::vec3(glm::radians(-8.0f), glm::radians(150.0f), glm::radians(-3.0f)), glm::vec3(70, 70, 70));
+        renderModel(tree, glm::vec3(700, 20, 750), glm::vec3(glm::radians(6.0f), glm::radians(199.0f), glm::radians(-3.0f)), glm::vec3(20, 20, 20));
+        renderModel(tree, glm::vec3(300, 20, 800), glm::vec3(glm::radians(1.0f), glm::radians(165.0f), glm::radians(12.0f)), glm::vec3(25, 25, 25));
 
         //Polling
         glfwSwapBuffers(window);
@@ -199,9 +217,41 @@ void renderTerrain()
     glDrawElements(GL_TRIANGLES, terrainIndicesSize, GL_UNSIGNED_INT, 0);
 }
 
-void renderModel(Model* model, glm::vec3 pos, glm::vec3 rot, glm::vec3 scale)
+void renderWater()
 {
     glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+    glEnable(GL_DEPTH);
+    glEnable(GL_DEPTH_TEST);
+    glDisable(GL_CULL_FACE);
+
+    glUseProgram(waterProgram);
+
+    glm::mat4 world = glm::mat4(1.0f);
+    world = glm::translate(world, glm::vec3(-750, 0, -750));
+
+    glUniformMatrix4fv(glGetUniformLocation(waterProgram, "world"), 1, GL_FALSE, glm::value_ptr(world));
+    glUniformMatrix4fv(glGetUniformLocation(waterProgram, "view"), 1, GL_FALSE, glm::value_ptr(view));
+    glUniformMatrix4fv(glGetUniformLocation(waterProgram, "projection"), 1, GL_FALSE, glm::value_ptr(projection));
+
+    glUniform1f(glGetUniformLocation(waterProgram, "time"), timePassed);
+    glUniform3fv(glGetUniformLocation(waterProgram, "lightDirection"), 1, glm::value_ptr(lightDirection));
+    glUniform3fv(glGetUniformLocation(waterProgram, "cameraPosition"), 1, glm::value_ptr(cameraPosition));
+
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, waterNormal);
+    glActiveTexture(GL_TEXTURE1);
+    glBindTexture(GL_TEXTURE_2D, waterFoam);
+
+    //Rendering.
+    glBindVertexArray(waterVAO);
+    glDrawElements(GL_TRIANGLES, waterIndicesSize, GL_UNSIGNED_INT, 0);
+}
+
+void renderModel(Model* model, glm::vec3 pos, glm::vec3 rot, glm::vec3 scale)
+{
+    glDisable(GL_BLEND);
     //Alpha blend.
     //glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     //Additive blend.
@@ -211,7 +261,7 @@ void renderModel(Model* model, glm::vec3 pos, glm::vec3 rot, glm::vec3 scale)
     //Multiply blend.
     //glBlendFunc(GL_DST_COLOR, GL_ZERO);
     //Double multiply blend.
-    glBlendFunc(GL_DST_COLOR, GL_SRC_COLOR);
+    //glBlendFunc(GL_DST_COLOR, GL_SRC_COLOR);
 
     glEnable(GL_DEPTH);
     glEnable(GL_DEPTH_TEST);
@@ -605,6 +655,13 @@ void createShaders()
     glUniform1i(glGetUniformLocation(modelProgram, "texture_normal1"), 2);
     glUniform1i(glGetUniformLocation(modelProgram, "texture_roughness1"), 3);
     glUniform1i(glGetUniformLocation(modelProgram, "texture_ao1"), 4);
+
+    createProgram(waterProgram, "shaders/WaterVertex.shader", "shaders/WaterFragment.shader");
+
+    glUseProgram(waterProgram);
+
+    glUniform1i(glGetUniformLocation(waterProgram, "textureNormal"), 0);
+    glUniform1i(glGetUniformLocation(waterProgram, "textureTerrain"), 1);
 }
 
 void createProgram(GLuint& programID, const char* vertex, const char* fragment)

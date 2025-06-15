@@ -155,6 +155,8 @@
     <None Include="shaders\SkyVertex.shader" />
     <None Include="shaders\TerrainFragment.shader" />
     <None Include="shaders\TerrainVertex.shader" />
+    <None Include="shaders\WaterFragment.shader" />
+    <None Include="shaders\WaterVertex.shader" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="sprites\container.jpg" />

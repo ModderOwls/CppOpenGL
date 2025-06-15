@@ -27,25 +27,29 @@ void main()
     normal.r = -normal.r;
     normal.b = -normal.b;
 
+    vec3 fixedLightDirection = lightDirection;
+    fixedLightDirection.z *= -1;
+
     //Specular data.
     vec3 viewDirection = normalize(worldPosition.rgb - cameraPosition);
     //vec3 reflectDirection = normalize(reflect(lightDirection, normal));
 
     //Lighting.
-    float lightValue = max(-dot(normal, lightDirection), 0.0);
+    float lightValue = max(dot(normal, -fixedLightDirection), 0.3);
     //float specular = pow(max(-dot(reflectDirection, viewDirection), 0.0), 48);
 
     //Build color.
     float y = worldPosition.y;
 
-    float ds = clamp((y - 50) / 10, -1, 1) * .5 + .5;
-    float sg = clamp((y - 75) / 10, -1, 1) * .5 + .5;
+    float ds = clamp((y + 5) / 10, -1, 1) * .5 + .5;
+    float sg = clamp((y - 45) / 10, -1, 1) * .5 + .5;
     float gr = clamp((y - 125) / 10, -1, 1) * .5 + .5;
     float rs = clamp((y - 200) / 10, -1, 1) * .5 + .5;
 
     float dist = length(worldPosition.xyz - cameraPosition);
     float texCoordsLerp = clamp((dist - 250) / 150, -1, 1) * .5 + .5;
 
+    //Prepare textures for distance sizing.
     vec3 dirtColorClose = texture(dirt, texCoord * 100).rgb;
     vec3 sandColorClose = texture(sand, texCoord * 100).rgb;
     vec3 grassColorClose = texture(grass, texCoord * 100).rgb;
@@ -58,6 +62,7 @@ void main()
     vec3 rockColorFar = texture(rock, texCoord * 10).rgb;
     vec3 snowColorFar = texture(snow, texCoord * 10).rgb;
 
+    //Color lerping.
     vec3 dirtColor = lerp(dirtColorClose, dirtColorFar, texCoordsLerp);
     vec3 sandColor = lerp(sandColorClose, sandColorFar, texCoordsLerp);
     vec3 grassColor = lerp(grassColorClose, grassColorFar, texCoordsLerp);

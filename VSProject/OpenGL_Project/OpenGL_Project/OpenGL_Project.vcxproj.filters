@@ -53,6 +53,12 @@
     <None Include="shaders\model.vs">
       <Filter>Resource Files\shaders</Filter>
     </None>
+    <None Include="shaders\WaterFragment.shader">
+      <Filter>Resource Files\shaders</Filter>
+    </None>
+    <None Include="shaders\WaterVertex.shader">
+      <Filter>Resource Files\shaders</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <Image Include="sprites\container.jpg">

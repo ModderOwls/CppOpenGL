@@ -1,0 +1,25 @@
+# Blender 4.4.3 MTL File: 'None'
+# www.blender.org
+
+newmtl Leaf__02
+Ka 1.000000 1.000000 1.000000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+illum 2
+map_Kd qimhv_2K_Albedo.png
+map_Ns qimhv_2K_Roughness.jpg
+map_d qimhv_2K_Opacity.jpg
+map_Bump qimhv_2K_Normal.jpg
+
+newmtl Oak_Bark
+Ka 1.000000 1.000000 1.000000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+d 1.000000
+illum 2
+map_Kd tihodjqbw_2K_Albedo.jpg
+map_Ns tihodjqbw_2K_Roughness.jpg
+map_Ka tihodjqbw_2K_AO.jpg
+map_Bump tihodjqbw_2K_Normal.jpg

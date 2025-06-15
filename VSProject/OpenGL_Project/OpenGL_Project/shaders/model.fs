@@ -34,7 +34,7 @@ void main()
     vec4 diffuse = texture(texture_diffuse1, TexCoords);
     vec4 specTex = texture(texture_specular1, TexCoords);
 
-    float light = max(dot(-lightDirection, Normals), 0.0);
+    float light = max(dot(-lightDirection * 2, Normals), 0.5);
 
     vec3 viewDirection = normalize(FragPos.rgb - cameraPosition);
     vec3 refl = reflect(lightDirection, Normals);
@@ -57,7 +57,7 @@ void main()
     //output.a = diffuse.r;
 
     //Clip at threshold.
-    if (output.a < 0.5) discard;
+    //if (output.a < 0.5) discard;
     
     FragColor = output;
 }
