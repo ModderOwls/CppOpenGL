@@ -27,12 +27,15 @@ void main()
     normal.r = -normal.r;
     normal.b = -normal.b;
 
+    vec3 fixedLightDirection = lightDirection;
+    fixedLightDirection.z *= -1;
+
     //Specular data.
     vec3 viewDirection = normalize(worldPosition.rgb - cameraPosition);
     //vec3 reflectDirection = normalize(reflect(lightDirection, normal));
 
     //Lighting.
-    float lightValue = max(-dot(normal, lightDirection), 0.0);
+    float lightValue = max(-dot(normal, fixedLightDirection), 0.0);
     //float specular = pow(max(-dot(reflectDirection, viewDirection), 0.0), 48);
 
     //Build color.
